@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: orquestrador
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  product-owner:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    ports:
+      - "8001:8001"
+    command: python product_owner/main.py
+    depends_on:
+      - redis
+
+  project-manager:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    ports:
+      - "8002:8002"
+    command: python project_manager/main.py
+    depends_on:
+      - redis
+
+  designer:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    ports:
+      - "8003:8003"
+    command: python designer/main.py
+    depends_on:
+      - redis
+
+  tech-lead:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    ports:
+      - "8004:8004"
+    command: python tech_lead/main.py
+    depends_on:
+      - redis
+
+  developer:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    ports:
+      - "8005:8005"
+    command: python developer/main.py
+    depends_on:
+      - redis
+
+  qa:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    ports:
+      - "8006:8006"
+    command: python qa/main.py
+    depends_on:
+      - redis
+
+  devops:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    ports:
+      - "8007:8007"
+    command: python devops/main.py
+    depends_on:
+      - redis
+
+volumes:
+  postgres_data:

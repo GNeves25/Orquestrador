@@ -1,0 +1,80 @@
+[
+    {
+        "id": "1",
+        "name": "Product Owner AI",
+        "role": "ProductOwner",
+        "description": "AI agent responsible for product vision and requirements",
+        "status": "active",
+        "port": 8001,
+        "capabilities": [
+            "requirements_analysis",
+            "user_stories",
+            "backlog_management"
+        ]
+    },
+    {
+        "id": "2",
+        "name": "Project Manager AI",
+        "role": "ProjectManager",
+        "description": "AI agent for project planning and task coordination",
+        "status": "active",
+        "port": 8002,
+        "capabilities": [
+            "task_planning",
+            "resource_allocation",
+            "timeline_management"
+        ]
+    },
+    {
+        "id": "3",
+        "name": "Designer AI",
+        "role": "Designer",
+        "description": "AI agent for UI/UX design and prototyping",
+        "status": "active",
+        "port": 8003,
+        "capabilities": [
+            "ui_design",
+            "ux_research",
+            "prototyping"
+        ]
+    },
+    {
+        "id": "4",
+        "name": "Tech Lead AI",
+        "role": "TechLead",
+        "description": "AI agent for technical architecture and code review",
+        "status": "active",
+        "port": 8004,
+        "capabilities": [
+            "architecture_design",
+            "code_review",
+            "tech_decisions"
+        ]
+    },
+    {
+        "id": "5",
+        "name": "Developer AI",
+        "role": "Developer",
+        "description": "AI agent for code implementation",
+        "status": "active",
+        "port": 8005,
+        "capabilities": [
+            "coding",
+            "testing",
+            "debugging"
+        ]
+    },
+    {
+        "id": "6",
+        "name": "QA Engineer AI",
+        "role": "QAEngineer",
+        "description": "AI agent for quality assurance and testing",
+        "status": "active",
+        "port": 8006,
+        "capabilities": [
+            "test_planning",
+            "test_execution",
+            "bug_reporting"
+        ]
+    }
+]

@@ -1,0 +1,84 @@
+<div class="workflow-container">
+    <div class="workflow-header">
+        <h2>Studio de Desenvolvimento: {{ project.name }}</h2>
+        <div style="display: flex; gap: 0.5rem;">
+            <button *ngIf="isStarted" class="btn-secondary" (click)="restartKickoff()" title="Reiniciar Processo">🔄
+                Reiniciar</button>
+            <button class="btn-secondary" (click)="close.emit()">← Voltar</button>
+        </div>
+    </div>
+
+    <div class="workflow-content">
+        <!-- Empty State / Start Button -->
+        <div *ngIf="!isStarted && steps.length === 0" class="start-screen">
+            <div class="start-icon">🧪</div>
+            <h3>Pronto para iniciar?</h3>
+            <p>Clique em Iniciar Kickoff para reunir os agentes.</p>
+            <button class="btn-primary btn-lg" (click)="startKickoff()" [disabled]="!isConnected">
+                {{ isConnected ? '🚀 Iniciar Kickoff' : '⏳ Conectando...' }}
+            </button>
+        </div>
+
+        <!-- Progress Stepper -->
+        <div *ngIf="isStarted || steps.length > 0" class="stepper-container">
+            <div class="stepper">
+                <div *ngFor="let role of workflowStepsOrder; let i = index" class="step-item"
+                    [class.active]="getStepStatus(role) === 'active'"
+                    [class.completed]="getStepStatus(role) === 'completed'">
+                    <div class="step-icon">{{ getRoleIcon(role) }}</div>
+                    <div class="step-label">{{ getRoleName(role) }}</div>
+                    <div class="step-line" *ngIf="i < workflowStepsOrder.length - 1"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Agent Status -->
+        <div *ngIf="activeAgentRole" class="active-agent-status">
+            <div class="agent-avatar pulse">
+                {{ getRoleIcon(activeAgentRole) }}
+            </div>
+            <div class="agent-info">
+                <h4>{{ activeAgentName || getRoleName(activeAgentRole) }}</h4>
+                <p>{{ currentActionStatus }} <span class="typing-dots">...</span></p>
+            </div>
+        </div>
+
+        <!-- Chat / Logs -->
+        <div *ngIf="isStarted || steps.length > 0" class="workflow-feed" #scrollContainer>
+            <div *ngFor="let step of steps" class="feed-item" [class.thinking]="step.isThinking">
+                <div class="feed-avatar">
+                    {{ getRoleIcon(step.agentRole) }}
+                </div>
+                <div class="feed-content">
+                    <div class="feed-header">
+                        <span class="feed-role">{{ step.agentName || getRoleName(step.agentRole) }}</span>
+                        <span class="feed-time">{{ step.timestamp | date:'HH:mm:ss' }}</span>
+                    </div>
+                    <div class="feed-body">
+                        <div *ngIf="step.isThinking" class="thinking-bubble">
+                            💭 {{ step.content }}
+                        </div>
+                        <div *ngIf="!step.isThinking" class="response-text">
+                            <div [innerHTML]="(step.content || '').replace('\n', '<br>')"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Panel -->
+    <div class="debug-panel"
+        style="margin-top: 2rem; padding: 1rem; background: #1a1a1a; border-radius: 8px; font-family: monospace; font-size: 0.8rem; border: 1px solid #333;">
+        <h4
+            style="margin-top: 0; color: #888; border-bottom: 1px solid #333; padding-bottom: 0.5rem; display: flex; justify-content: space-between;">
+            Display Debug Logs
+            <span [style.color]="isConnected ? '#4caf50' : '#f44336'">
+                ● {{ isConnected ? 'SignalR Connected' : 'Disconnected' }}
+            </span>
+        </h4>
+        <div class="debug-content" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap; color: #aaa;">
+            {{ debugInfo || 'No logs yet...' }}
+        </div>
+    </div>
+</div>

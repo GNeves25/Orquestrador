@@ -1,0 +1,233 @@
+<div class="app-container">
+  <header class="header">
+    <div class="header-content">
+      <div>
+        <h1>🤖 AI Development Team Orchestrator</h1>
+        <p class="subtitle">Gerenciador de Time Virtual de Desenvolvimento</p>
+      </div>
+      <button class="theme-toggle" (click)="toggleDarkMode()" title="Alternar Tema">
+        {{ darkMode ? '☀️' : '🌙' }}
+      </button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="loading" [style.display]="loading ? 'flex' : 'none'">
+      <div class="spinner"></div>
+      <p>Carregando dados...</p>
+    </div>
+
+    <div class="error-message" [style.display]="error && !loading ? 'block' : 'none'">
+      <h3>⚠️ Erro de Conexão</h3>
+      <p>{{ error }}</p>
+      <button class="btn-primary" (click)="loadData()">Tentar Novamente</button>
+    </div>
+
+    <div class="dashboard" [style.display]="!loading ? 'flex' : 'none'">
+      <!-- Statistics Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">📁</div>
+          <div class="stat-content">
+            <h3>{{ projects.length }}</h3>
+            <p>Projetos</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-content">
+            <h3>{{ tasks.length }}</h3>
+            <p>Tarefas</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-content">
+            <h3>{{ teamMembers.length }}</h3>
+            <p>Agentes Ativos</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">🚀</div>
+          <div class="stat-content">
+            <h3>{{ getInProgressCount() }}</h3>
+            <p>Em Progresso</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Projects Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2>📁 Projetos Recentes</h2>
+          <button class="btn-primary" (click)="openCreateProject()">+ Novo Projeto</button>
+        </div>
+
+        <div *ngIf="projects.length === 0" class="empty-state">
+          <p>Nenhum projeto criado ainda</p>
+          <button class="btn-primary" (click)="openCreateProject()">Criar Primeiro Projeto</button>
+        </div>
+
+        <div class="projects-grid">
+          <div *ngFor="let project of projects" class="project-card">
+            <div class="project-header">
+              <h3>{{ project.name }}</h3>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <span class="status-badge" [style.background-color]="getStatusColor(project.status)">
+                  {{ project.status }}
+                </span>
+                <button class="btn-sm btn-icon" title="Editar Projeto"
+                  (click)="$event.stopPropagation(); openEditProject(project)">
+                  ✏️
+                </button>
+                <button class="btn-sm btn-icon btn-delete" title="Excluir Projeto"
+                  (click)="$event.stopPropagation(); deleteProject(project)">
+                  🗑️
+                </button>
+              </div>
+            </div>
+            <p class="project-description">{{ project.description }}</p>
+            <div class="project-meta">
+              <span>📅 {{ project.createdAt | date: 'dd/MM/yyyy' }}</span>
+              <span>📋 {{ project.tasks?.length || 0 }} tarefas</span>
+            </div>
+            <div style="margin-top: 1rem;">
+              <button class="btn-secondary" style="width: 100%;" (click)="openProjectStudio(project)">🚀 Abrir Studio
+                Dev</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Team Members Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2>👥 Time de Desenvolvimento</h2>
+          <div class="header-actions">
+            <button class="btn-secondary" (click)="addCompleteTeam()" [disabled]="isCreatingTeam">
+              <span *ngIf="!isCreatingTeam">+ Time Completo</span>
+              <span *ngIf="isCreatingTeam" style="display: flex; align-items: center; gap: 0.5rem;">
+                <div class="spinner-sm"></div> Criando...
+              </span>
+            </button>
+            <button class="btn-primary" (click)="openCreateMember()">+ Adicionar Agente</button>
+          </div>
+        </div>
+
+        <div *ngIf="teamMembers.length === 0" class="empty-state">
+          <p>Nenhum agente configurado</p>
+          <div class="empty-actions">
+            <button class="btn-secondary" (click)="addCompleteTeam()">Adicionar Time Completo</button>
+            <button class="btn-primary" (click)="openCreateMember()">Adicionar Primeiro Agente</button>
+          </div>
+        </div>
+
+        <div class="team-grid">
+          <div *ngFor="let member of teamMembers" class="team-card">
+            <div class="team-icon">{{ getRoleIcon(member.role) }}</div>
+            <h3>{{ member.name }}</h3>
+            <p class="team-role">{{ member.role }}</p>
+            <p class="team-description">{{ member.description }}</p>
+            <div class="team-status-actions">
+              <div class="team-status" [class.active]="member.isActive">
+                <span class="status-dot"></span>
+                {{ member.isActive ? 'Ativo' : 'Parado' }}
+              </div>
+              <div class="action-buttons">
+                <button class="btn-sm btn-icon" [title]="member.isActive ? 'Parar Agente' : 'Ativar Agente'"
+                  (click)="toggleAgentStatus(member)">
+                  {{ member.isActive ? '⏸️' : '▶️' }}
+                </button>
+                <button class="btn-sm btn-icon btn-delete" title="Excluir Agente" (click)="deleteMember(member)">
+                  🗑️
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent Tasks Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2>✅ Tarefas Recentes</h2>
+          <button class="btn-primary" (click)="openCreateTask()">+ Nova Tarefa</button>
+        </div>
+
+        <div *ngIf="tasks.length === 0" class="empty-state">
+          <p>Nenhuma tarefa criada</p>
+          <button class="btn-primary" (click)="openCreateTask()">Criar Primeira Tarefa</button>
+        </div>
+
+        <div class="tasks-list">
+          <div *ngFor="let task of tasks.slice(0, 10)" class="task-item" (dblclick)="openExecuteTask(task)"
+            style="cursor: pointer;" title="Duplo clique para abrir a tarefa">
+            <div class="task-content">
+              <h4>{{ task.title }}</h4>
+              <p>{{ task.description }}</p>
+              <div class="task-meta">
+                <span *ngIf="task.assignedTo">
+                  {{ getRoleIcon(task.assignedTo.role) }} {{ task.assignedTo.name }}
+                </span>
+                <span class="priority" [class]="getPriorityClass(task.priority)">
+                  {{ getPriorityName(task.priority) }}
+                </span>
+              </div>
+            </div>
+            <div class="task-status">
+              <span class="status-badge" [style.background-color]="getStatusColor(task.status)">
+                {{ getStatusName(task.status) }}
+              </span>
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="btn-sm btn-icon" [title]="hasArtifacts(task) ? 'Ver Arquivos' : 'Sem Arquivos'"
+                  (click)="$event.stopPropagation(); openExecuteTask(task)"
+                  [style.opacity]="hasArtifacts(task) ? '1' : '0.3'"
+                  [style.cursor]="hasArtifacts(task) ? 'pointer' : 'default'">
+                  📄
+                </button>
+                <button class="btn-sm btn-execute" style="padding: 0.4rem; min-width: 32px; justify-content: center;"
+                  title="Executar" (click)="$event.stopPropagation(); openExecuteTask(task)">
+                  ⚡
+                </button>
+                <button class="btn-sm btn-icon" title="Editar Tarefa"
+                  (click)="$event.stopPropagation(); openEditTask(task)">
+                  ✏️
+                </button>
+                <button class="btn-sm btn-icon btn-delete" title="Excluir Tarefa"
+                  (click)="$event.stopPropagation(); deleteTask(task)">
+                  🗑️
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>Desenvolvido com ❤️ usando C#, Python, Angular e Google Gemini</p>
+  </footer>
+</div>
+
+<!-- Modals -->
+<app-create-project *ngIf="showCreateProject" [projectToEdit]="projectToEdit"
+  (close)="showCreateProject = false"></app-create-project>
+<app-create-member *ngIf="showCreateMember" (close)="showCreateMember = false"></app-create-member>
+<app-create-task *ngIf="showCreateTask" [projects]="projects" [members]="teamMembers" [taskToEdit]="taskToEdit"
+  (close)="showCreateTask = false"></app-create-task>
+
+<app-confirmation-modal *ngIf="showConfirmation" [title]="confirmationTitle" [message]="confirmationMessage"
+  [isAlert]="confirmationIsAlert" [confirmText]="confirmationButtonText" (confirm)="confirmAction()"
+  (cancel)="closeConfirmation()">
+</app-confirmation-modal>
+
+<app-task-execution *ngIf="showExecution && executingTask" [task]="executingTask" (close)="showExecution = false"
+  (taskUpdated)="onTaskUpdated()">
+</app-task-execution>
+
+<app-project-workflow *ngIf="selectedProject" [project]="selectedProject" (close)="closeProjectStudio()">
+</app-project-workflow>

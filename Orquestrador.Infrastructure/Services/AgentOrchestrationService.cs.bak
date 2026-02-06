@@ -1,0 +1,285 @@
+using System.Text;
+using System.Text.Json;
+using Orquestrador.Domain.Models;
+using Orquestrador.Domain.Enums;
+using Orquestrador.Domain.Interfaces;
+using Orquestrador.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
+
+namespace Orquestrador.Infrastructure.Services;
+
+public class AgentOrchestrationService
+{
+    private readonly AppDbContext _context;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IConnectionMultiplexer? _redis;
+    private readonly ILogger<AgentOrchestrationService> _logger;
+    private readonly IWorkflowNotifier? _notifier;
+
+    public AgentOrchestrationService(
+        AppDbContext context,
+        IHttpClientFactory httpClientFactory,
+        ILogger<AgentOrchestrationService> logger,
+        IConnectionMultiplexer? redis = null,
+        IWorkflowNotifier? notifier = null)
+    {
+        _context = context;
+        _httpClientFactory = httpClientFactory;
+        _redis = redis;
+        _logger = logger;
+        _notifier = notifier;
+    }
+
+    public async Task RunProjectKickoffAsync(Guid projectId)
+    {
+        _logger.LogInformation("Starting Project Kickoff for {ProjectId}", projectId);
+        var project = await _context.Projects.FindAsync(projectId);
+        if (project == null) return;
+
+        // 1. PO
+        await NotifyAsync(projectId, TeamMemberRole.ProductOwner, "Analyzing project and creating stories...", isThinking: true);
+        var poPrompt = $"Analyze this project: '{project.Description}'. Create 3-5 high-level User Stories.";
+        var stories = await CallAgentGeneric(TeamMemberRole.ProductOwner, poPrompt, project);
+        await NotifyAsync(projectId, TeamMemberRole.ProductOwner, stories);
+        
+        if (!stories.Contains("simulated")) 
+        {
+            project.Requirements = stories;
+            await _context.SaveChangesAsync();
+        }
+
+        // 2. Designer
+        await NotifyAsync(projectId, TeamMemberRole.Designer, "Designing UI structure...", isThinking: true);
+        var designerPrompt = $"Based on these stories:\n{stories}\n\nSuggest a UI structure.";
+        var design = await CallAgentGeneric(TeamMemberRole.Designer, designerPrompt, project);
+        await NotifyAsync(projectId, TeamMemberRole.Designer, design);
+
+        // 3. Tech Lead
+        await NotifyAsync(projectId, TeamMemberRole.TechLead, "Creating technical tasks...", isThinking: true);
+        var techPrompt = $"Based on design:\n{design}\n\nCreate list of technical tasks.";
+        var tech = await CallAgentGeneric(TeamMemberRole.TechLead, techPrompt, project);
+        await NotifyAsync(projectId, TeamMemberRole.TechLead, tech);
+        
+        await ParseAndCreateTasks(projectId, tech);
+
+        // 4. DevOps
+        await NotifyAsync(projectId, TeamMemberRole.DevOps, "Planning Pipeline...", isThinking: true);
+        var devopsPrompt = "Suggest CI/CD pipeline.";
+        var devops = await CallAgentGeneric(TeamMemberRole.DevOps, devopsPrompt, project);
+        await NotifyAsync(projectId, TeamMemberRole.DevOps, devops);
+
+        await NotifyAsync(projectId, TeamMemberRole.ProjectManager, "Kickoff Complete.", isCompleted: true);
+    }
+
+    private async Task NotifyAsync(Guid projectId, TeamMemberRole role, string content, bool isThinking = false, bool isCompleted = false)
+    {
+        if (_notifier == null) return;
+        await _notifier.NotifyStepAsync(new WorkflowStep
+        {
+            ProjectId = projectId,
+            AgentRole = role,
+            AgentName = role.ToString(),
+            Content = content,
+            StepName = isThinking ? "Thinking" : "Response",
+            Timestamp = DateTime.UtcNow,
+            IsThinking = isThinking,
+            IsCompleted = isCompleted
+        });
+    }
+
+    private async Task<string> CallAgentGeneric(TeamMemberRole role, string instruction, Project project)
+    {
+        var endpoint = GetDefaultEndpointForRole(role);
+        var payload = new 
+        {
+            task_id = Guid.NewGuid().ToString(),
+            title = "Kickoff Step",
+            description = instruction,
+            project_name = project.Name,
+            project_description = project.Description,
+            priority = "High"
+        };
+        
+        try
+        {
+            var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            var response = await httpClient.PostAsync($"{endpoint}/execute", content);
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var res = JsonSerializer.Deserialize<AgentExecutionResult>(json, options);
+                return res?.Output ?? "Empty response";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Agent {Role} unreachable: {Ex}", role, ex.Message);
+        }
+        return $"[Simulation] {role} analysis based on {instruction}";
+    }
+
+    public async Task<AgentResponse> ExecuteTaskAsync(Guid taskId)
+    {
+        var task = await _context.Tasks
+            .Include(t => t.AssignedTo)
+            .Include(t => t.Project)
+            .FirstOrDefaultAsync(t => t.Id == taskId);
+
+        if (task == null || task.AssignedTo == null)
+            throw new InvalidOperationException("Task not found or unassigned");
+
+        task.Status = Domain.Enums.TaskStatus.InProgress;
+        task.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        
+        var startTime = DateTime.UtcNow;
+        string responseContent;
+        int tokensUsed = 0;
+        bool success = true;
+        string? error = null;
+
+        try
+        {
+             // Reusing CallAgentGeneric logic but keeping original full implementation for now to be safe
+             // actually, better to inline logic to keep existing behavior exactly
+             var endpoint = task.AssignedTo.AgentEndpoint ?? GetDefaultEndpointForRole(task.AssignedTo.Role);
+             var payload = new
+             {
+                task_id = task.Id.ToString(),
+                title = task.Title,
+                description = task.Description,
+                context = task.Context,
+                expected_output = task.ExpectedOutput,
+                project_name = task.Project.Name,
+                project_description = task.Project.Description,
+                priority = task.Priority.ToString()
+             };
+
+             var client = _httpClientFactory.CreateClient();
+             client.Timeout = TimeSpan.FromSeconds(30);
+             var res = await client.PostAsync($"{endpoint}/execute", 
+                new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"));
+             
+             if (!res.IsSuccessStatusCode)
+             {
+                 var errorContent = await res.Content.ReadAsStringAsync();
+                 throw new HttpRequestException($"Agent failed: {res.StatusCode} - {errorContent}");
+             }
+
+             var json = await res.Content.ReadAsStringAsync();
+             var result = JsonSerializer.Deserialize<AgentExecutionResult>(json);
+             responseContent = result?.Output ?? "";
+             tokensUsed = result?.TokensUsed ?? 0;
+        }
+        catch (Exception ex)
+        {
+            success = false;
+            error = ex.Message;
+            responseContent = $"[Simulation Error: {ex.Message}]";
+        }
+
+        var processTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
+        var agentResponse = new AgentResponse
+        {
+            Id = Guid.NewGuid(),
+            TaskId = task.Id,
+            TeamMemberId = task.AssignedTo.Id,
+            Content = responseContent,
+            IsSuccessful = success,
+            ErrorMessage = error,
+            TokensUsed = tokensUsed,
+            ProcessingTimeMs = processTime,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        task.Status = success ? Domain.Enums.TaskStatus.Completed : Domain.Enums.TaskStatus.Failed;
+        task.UpdatedAt = DateTime.UtcNow;
+        if (success) task.CompletedAt = DateTime.UtcNow;
+
+        _context.AgentResponses.Add(agentResponse);
+        await _context.SaveChangesAsync();
+        await PublishTaskUpdateAsync(task, agentResponse);
+
+        return agentResponse;
+    }
+
+    private string GetDefaultEndpointForRole(TeamMemberRole role) => role switch
+    {
+        TeamMemberRole.ProductOwner => "http://localhost:8001",
+        TeamMemberRole.ProjectManager => "http://localhost:8002",
+        TeamMemberRole.Designer => "http://localhost:8003",
+        TeamMemberRole.TechLead => "http://localhost:8004",
+        TeamMemberRole.Developer => "http://localhost:8005",
+        TeamMemberRole.QA => "http://localhost:8006",
+        TeamMemberRole.DevOps => "http://localhost:8007",
+        _ => "http://localhost:8001"
+    };
+
+    private async Task PublishTaskUpdateAsync(ProjectTask task, AgentResponse response)
+    {
+        if (_redis == null) return;
+        try
+        {
+             var sub = _redis.GetSubscriber();
+             var msg = JsonSerializer.Serialize(new {
+                 task_id = task.Id,
+                 status = task.Status.ToString(),
+                 response_id = response.Id,
+                 is_successful = response.IsSuccessful,
+                 timestamp = DateTime.UtcNow
+             });
+             await sub.PublishAsync(RedisChannel.Literal("task-updates"), msg);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Redis publish failed: {Ex}", ex.Message);
+        }
+    }
+
+    private async Task ParseAndCreateTasks(Guid projectId, string text)
+    {
+        try 
+        {
+            var start = text.IndexOf('[');
+            var end = text.LastIndexOf(']');
+            if (start >= 0 && end > start)
+            {
+                var json = text.Substring(start, end - start + 1);
+                var tasks = JsonSerializer.Deserialize<List<TaskDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (tasks != null)
+                {
+                    foreach (var t in tasks)
+                    {
+                        _context.Tasks.Add(new ProjectTask 
+                        { 
+                            ProjectId = projectId, 
+                            Title = t.Title, 
+                            Description = t.Description ?? t.Title,
+                            Status = Domain.Enums.TaskStatus.Pending,
+                            Priority = Domain.Enums.TaskPriority.Medium
+                        });
+                    }
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }
+        catch (Exception ex) 
+        {
+            _logger.LogWarning("Failed to parse tasks: {Ex}", ex.Message);
+        }
+    }
+
+    private class TaskDto { public string Title { get; set; } = ""; public string Description { get; set; } = ""; }
+
+    private class AgentExecutionResult
+    {
+        public string Output { get; set; } = string.Empty;
+        public int TokensUsed { get; set; }
+        public bool Success { get; set; }
+    }
+}

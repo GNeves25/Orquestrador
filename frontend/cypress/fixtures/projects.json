@@ -1,0 +1,24 @@
+[
+    {
+        "id": "1",
+        "name": "E-commerce Platform",
+        "description": "Modern e-commerce platform with shopping cart and payment integration",
+        "requirements": "User authentication, product catalog, shopping cart, payment processing",
+        "techStack": "Angular, Node.js, PostgreSQL, Stripe",
+        "status": "in_progress",
+        "createdAt": "2024-01-15T10:00:00Z",
+        "tasks": 12,
+        "completedTasks": 5
+    },
+    {
+        "id": "2",
+        "name": "Mobile Banking App",
+        "description": "Secure mobile banking application with real-time transactions",
+        "requirements": "Account management, transfers, bill payments, transaction history",
+        "techStack": "React Native, Firebase, Node.js",
+        "status": "planning",
+        "createdAt": "2024-01-20T14:30:00Z",
+        "tasks": 8,
+        "completedTasks": 0
+    }
+]
