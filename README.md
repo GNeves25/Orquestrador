@@ -16,6 +16,8 @@ O **Orquestrador** é uma plataforma que simula uma equipe completa de desenvolv
 
 ![Nova Tarefa] <img width="2940" height="1672" alt="nova_tarefa_modal_1770401300367" src="https://github.com/user-attachments/assets/4c5835a6-45df-4ad1-8bab-e6e0e29d1d41" />
 
+<img width="1015" height="629" alt="image" src="https://github.com/user-attachments/assets/22989e74-a732-4fef-aa17-d6a8ebaa0edd" />
+
 ## 🛠️ Stack Tecnológica
 
 ### Backend
@@ -99,6 +101,8 @@ The **Orchestrator** is a platform that simulates a full software development te
 *   **🎨 Custom Design System**: Modern and responsive interface built with Angular and pure CSS.
 
 ![Nova Tarefa] <img width="2940" height="1672" alt="nova_tarefa_modal_1770401300367" src="https://github.com/user-attachments/assets/4c5835a6-45df-4ad1-8bab-e6e0e29d1d41" />
+
+<img width="1015" height="629" alt="image" src="https://github.com/user-attachments/assets/32e663e0-1201-47ed-a318-d2fb1040e36e" />
 
 ## 🛠️ Tech Stack
 
