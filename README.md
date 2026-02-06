@@ -2,7 +2,7 @@
 
 > **Um ambiente avançado para colaboração multi-agente e orquestração de desenvolvimento de software.**
 
-![Dashboard Overview](file:///Users/guilhermeneves/.gemini/antigravity/brain/d7c3e367-270b-481c-a5cf-2e5d5fd62788/dashboard_overview_1770401065079.png)
+![Dashboard Overview]<img width="2940" height="1672" alt="dashboard_overview_1770401065079" src="https://github.com/user-attachments/assets/87070e35-d4b3-42c2-9162-388f6f8ee720" />
 
 O **Orquestrador** é uma plataforma que simula uma equipe completa de desenvolvimento de software (Product Owner, Tech Lead, Designers, Devs, QA) utilizando Agentes de IA autônomos. Ele permite criar projetos, definir tarefas e assistir em tempo real enquanto os agentes colaboram para executar o trabalho.
 
@@ -14,7 +14,7 @@ O **Orquestrador** é uma plataforma que simula uma equipe completa de desenvolv
 *   **🧠 Integração com LLMs**: Suporte a modelos avançados (Google Gemini) para raciocínio e geração de código.
 *   **🎨 Design System Próprio**: Interface moderna e responsiva construída com Angular e CSS puro.
 
-![Nova Tarefa](file:///Users/guilhermeneves/.gemini/antigravity/brain/d7c3e367-270b-481c-a5cf-2e5d5fd62788/nova_tarefa_modal_1770401300367.png)
+![Nova Tarefa] <img width="2940" height="1672" alt="nova_tarefa_modal_1770401300367" src="https://github.com/user-attachments/assets/4c5835a6-45df-4ad1-8bab-e6e0e29d1d41" />
 
 ## 🛠️ Stack Tecnológica
 
@@ -86,7 +86,7 @@ Desenvolvido por Guilherme Neves e I.A.
 
 > **An advanced environment for multi-agent collaboration and software development orchestration.**
 
-![Dashboard Overview](file:///Users/guilhermeneves/.gemini/antigravity/brain/d7c3e367-270b-481c-a5cf-2e5d5fd62788/dashboard_overview_1770401065079.png)
+![Dashboard Overview]<img width="2940" height="1672" alt="dashboard_overview_1770401065079" src="https://github.com/user-attachments/assets/87070e35-d4b3-42c2-9162-388f6f8ee720" />
 
 The **Orchestrator** is a platform that simulates a full software development team (Product Owner, Tech Lead, Designers, Devs, QA) using autonomous AI Agents. It allows you to create projects, define tasks, and watch in real-time as agents collaborate to execute the work.
 
@@ -98,7 +98,7 @@ The **Orchestrator** is a platform that simulates a full software development te
 *   **🧠 LLM Integration**: Support for advanced models (Google Gemini) for reasoning and code generation.
 *   **🎨 Custom Design System**: Modern and responsive interface built with Angular and pure CSS.
 
-![New Task](file:///Users/guilhermeneves/.gemini/antigravity/brain/d7c3e367-270b-481c-a5cf-2e5d5fd62788/nova_tarefa_modal_1770401300367.png)
+![Nova Tarefa] <img width="2940" height="1672" alt="nova_tarefa_modal_1770401300367" src="https://github.com/user-attachments/assets/4c5835a6-45df-4ad1-8bab-e6e0e29d1d41" />
 
 ## 🛠️ Tech Stack
 
