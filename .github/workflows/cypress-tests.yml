@@ -10,7 +10,7 @@ on:
 jobs:
   cypress-run:
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:15
@@ -47,9 +47,10 @@ jobs:
         with:
           python-version: '3.11'
 
+      # 🔧 FIX AQUI
       - name: Install frontend dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: npm install
 
       - name: Install Python dependencies for agents
         run: |
